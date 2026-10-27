@@ -318,9 +318,55 @@ class RegisterIn(Strict):
         return v
 
 
+class OperatorRegisterIn(Strict):
+    """Create an operator company profile and its initial login."""
+    name: Name
+    license_no: LicenseNo
+    email: Email
+    phone: Phone
+    city: City
+    service_interval_hrs: int | None = Field(None, gt=0, le=5000)
+    password: Password
+
+    @field_validator("password")
+    @classmethod
+    def _not_the_email(cls, v, info):
+        if v.lower() == str(info.data.get("email", "")).lower():
+            raise ValueError("must not be your email address")
+        return v
+
+
 class LoginIn(Strict):
     email: Annotated[str, _text(100), AfterValidator(_lower)]
     password: Annotated[str, Field(min_length=1, max_length=128)]
+
+
+class OperatorLoginIn(LoginIn):
+    license_no: LicenseNo
+
+
+class OperatorFlightIn(Strict):
+    aircraft_id: int = Field(gt=0)
+    origin_id: int = Field(gt=0)
+    dest_id: int = Field(gt=0)
+    departure_time: datetime
+    passengers: int = Field(gt=0, le=500)
+    customer_name: Name
+    customer_email: Email
+    customer_phone: Phone
+    customer_id_proof: IdProof
+
+    @field_validator("departure_time")
+    @classmethod
+    def _departure(cls, v):
+        return check_departure(v)
+
+    @field_validator("dest_id")
+    @classmethod
+    def _different_places(cls, v, info):
+        if v == info.data.get("origin_id"):
+            raise ValueError("must differ from origin_id")
+        return v
 
 
 class ChangePasswordIn(Strict):
@@ -340,6 +386,7 @@ class MeOut(ORM):
     email: str
     role: str
     customer: CustomerOut | None
+    operator: OperatorOut | None
 
 
 class TokenOut(BaseModel):

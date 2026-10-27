@@ -1,0 +1,41 @@
+.gf-section {
+  position: relative;
+  z-index: 1;
+  height: 480svh;
+  color: #fff;
+}
+
+.gf-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.gf-svg {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: auto;
+  display: block;
+  width: 440px;
+  min-width: 0;
+  height: auto;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 700px) {
+  .gf-svg {
+    top: 50%;
+    right: auto;
+    width: 220px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-section {
+    height: 100svh;
+  }
+}

@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from sqlalchemy import text
 
-from . import auth, bookings, errors, fleet
+from . import auth, bookings, errors, fleet, operators
 from . import schemas as s
 from .auth import current_user
 from .config import settings
@@ -24,8 +24,8 @@ app = FastAPI(
     title="Charter Aircraft Rental",
     version="1.0.0",
     description=(
-        "**Auth**: `POST /auth/register` or `/auth/login`, then send `Authorization: Bearer <access_token>` "
-        "(click *Authorize* here). Roles: `customer` (own bookings, search, pay) and `admin` (staff: everything).\n\n"
+        "**Auth**: customer `POST /auth/register` or `/auth/login`; operator `POST /auth/operator/register` "
+        "or `/auth/operator/login`; then send `Authorization: Bearer <access_token>`. Roles: customer, operator, admin.\n\n"
         "**Errors** always look like `{\"detail\": \"...\"}`; invalid input (422) also carries "
         "`errors: [{field, message}]`. 401 = log in, 403 = not allowed, 404 = not found, 409 = business rule / conflict, "
         "429 = slow down.\n\n"
@@ -135,3 +135,4 @@ app.include_router(crud("pilots", Pilot, s.PilotIn, s.PilotOut,
 
 app.include_router(bookings.router)
 app.include_router(fleet.router)
+app.include_router(operators.router)

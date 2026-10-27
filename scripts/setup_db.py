@@ -18,6 +18,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from app.config import settings  # noqa: E402
+from app.security import hash_password  # noqa: E402
+
+DEMO_OPERATOR_EMAIL = "ops@skyway.example"
+DEMO_OPERATOR_PASSWORD = "SkywayDemo2026"
 
 
 def connect(url, dbname):
@@ -71,6 +75,14 @@ def main():
             else:
                 cur.execute((ROOT / "seed.sql").read_text(encoding="utf-8"))
                 print("loaded seed.sql")
+            cur.execute(
+                """INSERT INTO app_user (email, password_hash, role, operator_id)
+                   SELECT email, %s, 'operator', operator_id FROM operator WHERE email = %s
+                   ON CONFLICT DO NOTHING""",
+                (hash_password(DEMO_OPERATOR_PASSWORD), DEMO_OPERATOR_EMAIL),
+            )
+            if cur.rowcount:
+                print("created demo operator login")
     conn.close()
 
 

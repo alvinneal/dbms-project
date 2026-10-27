@@ -14,12 +14,23 @@ copy .env.example .env            # fill in DATABASE_URL and SECRET_KEY, then SA
 
 .\venv\Scripts\python.exe scripts\setup_db.py --seed        # safe to rerun; adds what is missing
 .\venv\Scripts\python.exe scripts\create_admin.py you@example.com   # staff login (asks for a password)
-.\venv\Scripts\python.exe -m uvicorn app.main:app --reload
+.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8001
 ```
 
-Open **http://localhost:8000/docs**, click **Authorize**, log in with the staff email and
+The API loads `.env` from the repository root when it starts. Restart the API after changing
+`DATABASE_URL` so the SQLAlchemy engine connects to the new database.
+
+Open **http://localhost:8001/docs**, click **Authorize**, log in with the staff email and
 password, and try everything. `/health` should say `ok`.
 `setup_db.py --reset` wipes and rebuilds the database (destructive).
+
+The demo operator account is created by `setup_db.py --seed`:
+
+- Email: `ops@skyway.example`
+- Password: `SkywayDemo2026`
+- Operator license: `OP-1001`
+
+Use all three values in the operator sign-in form. This account is for local demo data only.
 
 ## Test it
 

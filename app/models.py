@@ -172,13 +172,14 @@ class Booking(Base):
 
 
 class AppUser(Base):
-    """A login (see auth.sql). Role 'customer' owns one customer row; 'admin' is staff."""
+    """A login linked to a customer, operator, or staff role (see auth.sql)."""
     __tablename__ = "app_user"
     user_id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str]
     password_hash: Mapped[str]
     role: Mapped[str]
     customer_id: Mapped[int | None] = mapped_column(ForeignKey("customer.customer_id"))
+    operator_id: Mapped[int | None] = mapped_column(ForeignKey("operator.operator_id"))
     is_active: Mapped[bool] = mapped_column(**DB_DEFAULT)
     failed_logins: Mapped[int] = mapped_column(**DB_DEFAULT)
     locked_until: Mapped[datetime | None]
@@ -186,6 +187,7 @@ class AppUser(Base):
     created_at: Mapped[datetime] = mapped_column(**DB_DEFAULT)
 
     customer: Mapped[Customer | None] = relationship(lazy="joined", viewonly=True)
+    operator: Mapped[Operator | None] = relationship(lazy="joined", viewonly=True)
 
     @property
     def is_admin(self) -> bool:

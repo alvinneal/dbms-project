@@ -1,5 +1,6 @@
 import logging
 import secrets
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -8,7 +9,7 @@ log = logging.getLogger("app")
 
 class Settings(BaseSettings):
     """Read from environment variables or a .env file (see .env.example)."""
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=Path(__file__).resolve().parent.parent / ".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/charter"
     # "development" or "production". Production hides /docs and sends HSTS; it also refuses to start without SECRET_KEY.

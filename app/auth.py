@@ -8,7 +8,7 @@ from sqlalchemy import select
 from . import schemas as s
 from .config import settings
 from .deps import DB
-from .models import AppUser, Customer
+from .models import AppUser, Customer, Operator
 from .security import DUMMY_HASH, create_token, hash_password, limiter, read_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -43,8 +43,15 @@ def require_admin(user: Annotated[AppUser, Depends(current_user)]) -> AppUser:
     return user
 
 
+def require_operator(user: Annotated[AppUser, Depends(current_user)]) -> AppUser:
+    if user.role != "operator" or user.operator_id is None:
+        raise HTTPException(403, "Operator access only")
+    return user
+
+
 User = Annotated[AppUser, Depends(current_user)]
 Admin = Annotated[AppUser, Depends(require_admin)]
+OperatorUser = Annotated[AppUser, Depends(require_operator)]
 
 
 # ---------- abuse protection for the login endpoints ----------
@@ -103,10 +110,34 @@ def register(body: s.RegisterIn, db: DB):
     return issue_token(user)
 
 
+@router.post("/operator/register", response_model=s.TokenOut, status_code=201,
+             dependencies=[Depends(auth_rate_limit)])
+def register_operator(body: s.OperatorRegisterIn, db: DB):
+    """Create an operator company and its first operator login."""
+    values = body.model_dump(exclude={"password"}, exclude_none=True)
+    operator = Operator(**values)
+    db.add(operator)
+    db.flush()
+    user = AppUser(email=body.email, password_hash=hash_password(body.password),
+                   role="operator", operator_id=operator.operator_id)
+    db.add(user)
+    db.commit()
+    return issue_token(user)
+
+
 @router.post("/login", response_model=s.TokenOut, dependencies=[Depends(auth_rate_limit)])
 def login(body: s.LoginIn, db: DB):
     """Email + password (JSON) -> bearer token. Send it as `Authorization: Bearer <token>`."""
     return issue_token(authenticate(db, body.email, body.password))
+
+
+@router.post("/operator/login", response_model=s.TokenOut, dependencies=[Depends(auth_rate_limit)])
+def operator_login(body: s.OperatorLoginIn, db: DB):
+    """Operators sign in with their account email, password, and company license number."""
+    user = authenticate(db, body.email, body.password)
+    if user.role != "operator" or user.operator is None or user.operator.license_no != body.license_no:
+        raise unauthorized("Incorrect email, password, or operator license number")
+    return issue_token(user)
 
 
 @router.post("/token", response_model=s.TokenOut, dependencies=[Depends(auth_rate_limit)], include_in_schema=True)

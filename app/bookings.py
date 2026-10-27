@@ -105,11 +105,14 @@ def list_bookings(response: Response, db: DB, user: User, page: Annotated[Page, 
                   departs_from: Annotated[date | None, Query(description="departure on or after")] = None,
                   departs_to: Annotated[date | None, Query(description="departure on or before")] = None):
     """Soonest departure first. Total matches in the X-Total-Count header. Customers see only their own."""
-    if not user.is_admin:
+    if user.role == "customer":
         if customer_id not in (None, user.customer_id):
             raise HTTPException(403, "You can only list your own bookings")
         customer_id = user.customer_id
     q = select(Booking)
+    if user.role == "operator":
+        q = q.join(Aircraft, Aircraft.aircraft_id == Booking.aircraft_id).where(
+            Aircraft.operator_id == user.operator_id)
     for col, value in (("customer_id", customer_id), ("aircraft_id", aircraft_id),
                        ("pilot_id", pilot_id), ("status", status)):
         if value is not None:
@@ -134,6 +137,8 @@ def create_booking(body: s.BookingIn, db: DB, user: User):
 
     Customers book for themselves (omit customer_id); staff must pass the customer_id.
     """
+    if user.role == "operator":
+        raise HTTPException(403, "Operators create flights through the operator dashboard")
     if user.is_admin:
         if body.customer_id is None:
             raise RequestValidationError([{"loc": ("body", "customer_id"), "msg": "is required for staff",
