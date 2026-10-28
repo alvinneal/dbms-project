@@ -142,3 +142,18 @@ button:focus-visible,a:focus-visible{outline:3px solid #1c2bfd;outline-offset:3p
 .receipt-footer span:first-child{color:#1c2bfd;font-weight:700;letter-spacing:.08em}
 @media(max-width:600px){.receipt-backdrop{align-items:start;padding:12px}.receipt-actions{top:10px;right:10px}.receipt-actions .modal-close{width:34px;height:34px}.receipt-print-button{min-height:34px;font-size:10px}.receipt-header{padding:16px 18px}.receipt-status{margin-right:126px}.receipt-title-row{align-items:flex-start;flex-direction:column;padding:22px 18px 16px}.receipt-reference{text-align:left}.receipt-route{margin-inline:18px;grid-template-columns:1fr 48px 1fr;gap:8px}.receipt-route strong{font-size:26px}.receipt-route span{font-size:9px}.receipt-details{grid-template-columns:repeat(2,minmax(0,1fr));padding:18px}.receipt-fare{margin-inline:18px}.receipt-footer{padding:12px 18px;flex-direction:column}}
 @media print{body *{visibility:hidden!important}.receipt-backdrop,.receipt-backdrop *{visibility:visible!important}.receipt-backdrop{position:absolute;inset:0;display:block;overflow:visible;background:#fff;padding:0}.booking-receipt{width:100%;max-width:none;overflow:visible;box-shadow:none}.no-print{display:none!important}.receipt-header,.receipt-footer{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* Fixed booking action slots: cancel, receipt/pass, then payment. */
+.booking-actions{display:grid;grid-template-columns:minmax(180px,1fr) 58px 130px;align-items:center;gap:8px}
+.booking-action-slot{display:flex;align-items:center;min-width:0}
+.booking-action-slot .cancel-button,.booking-action-slot .receipt-link{width:100%;justify-content:center;white-space:nowrap}
+.booking-cancel-slot .cancel-button,.booking-receipt-slot .receipt-link{border:0;border-radius:0;background:#1c2bfd;color:#fff;font-size:10px;font-weight:700}
+.booking-cancel-slot .cancel-button{background:#faeceb;color:#98635e}
+.booking-cancel-slot .cancel-button:hover{background:#f4d8d5;color:#844e49}
+.booking-receipt-slot .receipt-link:hover{background:#1421d4;color:#fff}
+.booking-payment-controls{display:flex;align-items:center;gap:8px}
+.booking-payment-controls select{flex:0 0 100px;width:100px}
+.booking-payment-controls button{display:flex;align-items:center;justify-content:center;flex:1;min-height:44px;border:0;background:#1c2bfd;color:#fff;padding:9px 10px;font-size:10px;font-weight:700;white-space:nowrap}
+.booking-payment-controls button:hover{background:#1421d4}
+@media(max-width:980px){.booking-actions{grid-column:1/-1;grid-row:auto}}
+@media(max-width:700px){.booking-actions{grid-column:1/3;grid-row:auto;grid-template-columns:minmax(180px,1fr) 58px 130px;overflow-x:auto;padding-bottom:2px}}

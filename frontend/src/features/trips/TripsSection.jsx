@@ -13,21 +13,28 @@ function BookingCard({ booking, paymentMethod, busy, onPaymentMethodChange, onPa
         <strong>{money(booking.balance_due > 0 ? booking.balance_due : booking.total_fare)}</strong>
       </div>
       <div className="booking-actions">
-        <button className="receipt-link" onClick={() => onViewReceipt(booking)}>
-          {booking.status === 'Confirmed' ? 'View boarding pass' : 'View receipt'}
-        </button>
-        {booking.status === 'Pending' && booking.balance_due > 0 && (
-          <>
-            <select aria-label="Payment method" value={paymentMethod}
-              onChange={(event) => onPaymentMethodChange(event.target.value)}>
-              <option>Card</option><option>UPI</option><option>Bank transfer</option>
-            </select>
-            <button onClick={() => onPay(booking)} disabled={busy}>Pay balance</button>
-          </>
-        )}
-        {['Pending', 'Confirmed'].includes(booking.status) && (
-          <button className="cancel-button" onClick={() => onCancel(booking)} disabled={busy}>Cancel</button>
-        )}
+        {/* Keep payment, cancel, and receipt/pass slots fixed; leave unavailable actions empty. */}
+        <div className="booking-action-slot booking-payment-slot">
+          {booking.status === 'Pending' && booking.balance_due > 0 && (
+            <div className="booking-payment-controls">
+              <select aria-label="Payment method" value={paymentMethod}
+                onChange={(event) => onPaymentMethodChange(event.target.value)}>
+                <option>Card</option><option>UPI</option><option>Bank transfer</option>
+              </select>
+              <button onClick={() => onPay(booking)} disabled={busy}>Pay balance</button>
+            </div>
+          )}
+        </div>
+        <div className="booking-action-slot booking-cancel-slot">
+          {['Pending', 'Confirmed'].includes(booking.status) && (
+            <button className="cancel-button" onClick={() => onCancel(booking)} disabled={busy}>Cancel</button>
+          )}
+        </div>
+        <div className="booking-action-slot booking-receipt-slot">
+          <button className="receipt-link" onClick={() => onViewReceipt(booking)}>
+            {booking.status === 'Confirmed' ? 'View boarding pass' : 'View receipt'}
+          </button>
+        </div>
       </div>
     </article>
   )
