@@ -36,6 +36,12 @@ Operators can add aircraft to their own fleet with `POST /operator/aircraft`
 (`registration_no`, `type_id`). They can view their aircraft, pilots, maintenance queue,
 and flights; they can also record service for their own aircraft. Customers create bookings
 for themselves, and staff can create bookings for customers. Operators cannot create bookings.
+**Demo data**: `--seed` loads a small set (2 operators, 4 aircraft, 2 customers, no bookings).
+`--seed-large` loads `seed_large.sql` instead (25 operators, 80 aircraft, 117 pilots, 150 customers,
+600 bookings, 824 payments), which is better for trying lists, filters, paging and `/stats`.
+Pick one: both use the same ids, and seeding only happens into an empty database
+(use `--reset` for a clean start). The seeded customers have no login; sign up with
+`POST /auth/register` to get a customer account, or use the staff account to see everything.
 
 ## Test it
 

@@ -1,7 +1,8 @@
 """Create the database and load schema.sql + routines.sql (+ seed.sql).
 
     python scripts/setup_db.py            # create the database if missing, load schema/routines if empty
-    python scripts/setup_db.py --seed     # also load the demo data
+    python scripts/setup_db.py --seed     # also load the small demo data
+    python scripts/setup_db.py --seed-large   # or the large one (600 bookings); only into an empty database
     python scripts/setup_db.py --reset    # DROP everything in the database first, then load again
 
 Uses DATABASE_URL (or .env), the same as the API.
@@ -31,9 +32,13 @@ def connect(url, dbname):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", action="store_true", help="load seed.sql demo data")
+    ap.add_argument("--seed", action="store_true", help="load seed.sql, a small demo dataset")
+    ap.add_argument("--seed-large", action="store_true",
+                    help="load seed_large.sql instead: 25 operators, 80 aircraft, 150 customers, 600 bookings")
     ap.add_argument("--reset", action="store_true", help="wipe the database first (destructive)")
     args = ap.parse_args()
+    if args.seed and args.seed_large:
+        ap.error("choose either --seed or --seed-large, not both (they use the same ids)")
 
     url = make_url(settings.database_url)
     dbname = url.database
@@ -68,21 +73,14 @@ def main():
         # CREATE ... IF NOT EXISTS, safe to run every time
         cur.execute((ROOT / "auth.sql").read_text(encoding="utf-8"))
         print("loaded auth.sql (login accounts)")
-        if args.seed:
+        if args.seed or args.seed_large:
+            seed_file = "seed_large.sql" if args.seed_large else "seed.sql"
             cur.execute("SELECT count(*) FROM operator")
             if cur.fetchone()[0]:
-                print("seed skipped: operator table is not empty")
+                print(f"{seed_file} skipped: operator table is not empty (use --reset for a clean start)")
             else:
-                cur.execute((ROOT / "seed.sql").read_text(encoding="utf-8"))
-                print("loaded seed.sql")
-            cur.execute(
-                """INSERT INTO app_user (email, password_hash, role, operator_id)
-                   SELECT email, %s, 'operator', operator_id FROM operator WHERE email = %s
-                   ON CONFLICT DO NOTHING""",
-                (hash_password(DEMO_OPERATOR_PASSWORD), DEMO_OPERATOR_EMAIL),
-            )
-            if cur.rowcount:
-                print("created demo operator login")
+                cur.execute((ROOT / seed_file).read_text(encoding="utf-8"))
+                print(f"loaded {seed_file}")
     conn.close()
 
 
