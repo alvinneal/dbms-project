@@ -11,7 +11,7 @@ from .auth import Admin, User, current_user
 from .deps import DB, Page, get_or_404
 from .models import AppUser, Aircraft, Booking, Customer, Location, Payment
 
-# every route here needs a login; customers are further limited to their own bookings
+# every route here needs a login; customers see their bookings and operators see bookings for their fleet
 router = APIRouter(dependencies=[Depends(current_user)])
 
 
@@ -138,7 +138,7 @@ def create_booking(body: s.BookingIn, db: DB, user: User):
     Customers book for themselves (omit customer_id); staff must pass the customer_id.
     """
     if user.role == "operator":
-        raise HTTPException(403, "Operators create flights through the operator dashboard")
+        raise HTTPException(403, "Operators cannot create bookings")
     if user.is_admin:
         if body.customer_id is None:
             raise RequestValidationError([{"loc": ("body", "customer_id"), "msg": "is required for staff",

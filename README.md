@@ -32,6 +32,11 @@ The demo operator account is created by `setup_db.py --seed`:
 
 Use all three values in the operator sign-in form. This account is for local demo data only.
 
+Operators can add aircraft to their own fleet with `POST /operator/aircraft`
+(`registration_no`, `type_id`). They can view their aircraft, pilots, maintenance queue,
+and flights; they can also record service for their own aircraft. Customers create bookings
+for themselves, and staff can create bookings for customers. Operators cannot create bookings.
+
 ## Test it
 
 ```powershell
@@ -46,23 +51,30 @@ $env:DATABASE_URL = "postgresql+psycopg2://postgres:PASSWORD@localhost:5432/char
 ## For the frontend
 
 **Login**
-1. `POST /auth/register` `{name, email, phone, id_proof, password}` (customers) or
-   `POST /auth/login` `{email, password}` -> `{access_token, expires_in, user}`.
-2. Send `Authorization: Bearer <access_token>` on every other call. Keep the token in
-   memory (or sessionStorage); there are no cookies, so no CSRF to worry about.
-3. A `401` means log in again (expired, signed out, account disabled). `GET /auth/me` returns
-   the current user and role, so the UI knows whether to show customer or staff screens.
-4. Staff accounts are created with `scripts/create_admin.py`; nobody can register as staff.
+1. Customers use `POST /auth/register` with `{name, email, phone, id_proof, password}` or
+   `POST /auth/login` with `{email, password}`. Operators use `/auth/operator/register` or
+   `/auth/operator/login`; operator login also requires `license_no`. Both return
+   `{access_token, expires_in, user}`.
+2. Send `Authorization: Bearer <access_token>` on protected calls. The frontend stores the
+   token in `sessionStorage`; the API does not use cookies.
+3. `GET /auth/me` returns the current role (`customer`, `operator`, or `admin`). A `401`
+   means the token is missing or no longer valid.
+4. Admin accounts are created with `scripts/create_admin.py`. Customers and operators can
+   register through the API.
 
 **Who can do what**
 
-| | logged out | customer | staff (admin) |
-|---|---|---|---|
-| `/locations` read, `/meta`, `/health` | yes | yes | yes |
-| `/aircraft-types` read, `/search`, `/quote` | | yes | yes |
-| book, pay, cancel, list bookings | | **own only** | all |
-| `/customers`, `/operators`, `/aircraft`, `/pilots` | | | yes |
-| complete a flight, maintenance, `/stats`, any create/edit/delete of master data | | | yes |
+| Capability | logged out | customer | operator | staff (admin) |
+|---|---|---|---|---|
+| `/locations` read, `/meta`, `/health` | yes | yes | yes | yes |
+| `/aircraft-types` read, `/search`, `/quote` | | yes | yes | yes |
+| Create bookings | | for self | | for a customer |
+| List bookings | | own only | own fleet only | all |
+| Read, pay, or cancel a booking | | own only | | all |
+| `/operator/me`, `/operator/aircraft`, `/operator/pilots`, `/operator/maintenance`, `/operator/flights` | | | own operator data | |
+| Add aircraft with `POST /operator/aircraft`; record service with `/operator/aircraft/{id}/service` | | | own fleet | |
+| `/customers`, `/operators`, `/aircraft`, `/pilots` master data | | | | yes |
+| Complete a flight, run maintenance check, `/stats`, edit/delete master data | | | | yes |
 
 Customers get a `404` (not `403`) for someone else's booking, so ids cannot be probed.
 
@@ -79,20 +91,22 @@ Customers get a `404` (not `403`) for someone else's booking, so ids cannot be p
   (`2026-11-05T10:00:00`); an offset (`...Z`) is converted to server local time.
 * **Bookings** include names/codes and `amount_paid` / `balance_due`; aircraft include
   operator, model, seats and `service_due_in_hours`.
-* `GET /meta` returns every dropdown list and rule (categories, statuses, payment
-  methods, booking lead time, password rules) so the UI never hard-codes them.
+* `GET /meta` returns fixed dropdown values and rules (categories, statuses, payment
+  methods, booking lead time, password rules). Locations and aircraft types are listed by
+  `/locations` and `/aircraft-types`.
 * `GET /quote` prices one aircraft, `GET /search` finds all that can fly a route.
 
 ## Security
 
 * **Passwords**: scrypt (salted, memory-hard), 10+ characters with a letter and a digit.
   Login says only "Incorrect email or password" and takes the same time for unknown emails.
-* **Tokens**: signed JWT (HS256, algorithm pinned), 60 minutes. The user is re-checked on every
+* **Tokens**: signed JWT (HS256, algorithm pinned), 60 minutes by default. The user is re-checked on every
   request, so disabling an account or changing a password signs out old tokens immediately.
-* **Brute force**: 5 wrong passwords lock the account for 15 minutes; login/register are limited to
-  10 requests per minute per IP; everything else to 300 per minute.
-* **Access control**: roles on every route, customers confined to their own data, mass assignment
-  impossible (unknown JSON fields are rejected, so nobody can send `role` or `status`).
+* **Brute force**: by default, 5 wrong passwords lock the account for 15 minutes; login/register are limited to
+  10 requests per minute per IP; everything else to 300 per minute. These values can be configured in `.env`.
+* **Access control**: roles on every route, customers confined to their own data, and operator
+  actions scoped to their own fleet. Request schemas reject unknown fields, including attempts to
+  supply an operator ID when adding an aircraft.
 * **Injection**: all queries are parameterised; text search escapes `%` and `_`.
 * **Hardening**: strict CORS (only your origins, only needed methods/headers), Host header allow-list,
   64 KB request limit, `nosniff`, no-framing, `no-store`, CSP, HSTS in production, no stack traces
@@ -102,13 +116,15 @@ Customers get a `404` (not `403`) for someone else's booking, so ids cannot be p
   The rate limiter keeps its counters in memory, so behind a proxy make sure the real client IP is
   forwarded (`uvicorn --proxy-headers`), and move to Redis if you run several workers.
 * Not included: email verification / password reset, refresh tokens, and a real payment gateway
-  (`POST /payments` just records a payment).
+  (`POST /bookings/{id}/payments` records a payment in the database).
 
 ## Business rules worth knowing
 
-* Departure must be `MIN_LEAD_MINUTES` (30) to `MAX_ADVANCE_DAYS` (365) from now.
+* Departure must be between `MIN_LEAD_MINUTES` (30 by default) and `MAX_ADVANCE_DAYS` (365 by default) from now.
 * Emails are lower-cased, codes/registrations/licences upper-cased, whitespace trimmed.
-* An aircraft in Maintenance returns to service only via `POST /aircraft/{id}/service`.
+* An aircraft in Maintenance returns to service only through the service endpoint:
+  staff use `POST /aircraft/{id}/service`, and operators use
+  `POST /operator/aircraft/{id}/service` for their own aircraft.
 * Aircraft/pilots with upcoming bookings can't be deleted, change operator/type/rating,
   or (pilots) go on leave.
 * Payments: part payments allowed, overpayment refused, fully paid -> Confirmed

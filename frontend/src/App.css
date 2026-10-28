@@ -103,3 +103,42 @@ button:focus-visible,a:focus-visible{outline:3px solid #1c2bfd;outline-offset:3p
 /* Let the empty search state end close to its content instead of filling a viewport. */
 .api-content{min-height:0}
 .auth-error-top{margin:0 0 16px}
+
+/* Booking receipt and boarding pass */
+.receipt-link{min-height:40px;padding:0 10px;border:1px solid #b8c9df;background:#fff;color:#18365d;font-size:10px;white-space:nowrap}
+.receipt-link:hover{border-color:#1c2bfd;color:#1c2bfd}
+.receipt-backdrop{position:fixed;inset:0;z-index:250;display:grid;place-items:center;overflow-y:auto;background:rgba(10,22,43,.68);padding:24px}
+.booking-receipt{position:relative;width:min(680px,100%);overflow:hidden;background:#fff;color:#18365d;box-shadow:0 24px 80px rgba(5,18,45,.35)}
+.receipt-actions{position:absolute;top:14px;right:14px;display:flex;gap:10px;align-items:center}
+.receipt-actions .modal-close{position:static;display:grid;place-items:center;width:38px;height:38px;border:1px solid #b8c9df;background:#fff;color:#18365d;font-size:22px;line-height:1}
+.receipt-print-button{min-height:38px;border:1px solid #b8c9df;background:#fff;color:#18365d;padding:0 12px;font-size:11px}
+.receipt-header{display:flex;align-items:center;justify-content:space-between;background:#132f55;color:#fff;padding:20px 28px}
+.receipt-brand{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em}
+.receipt-brand>span:last-child{color:#aebbf8;margin-left:-8px}
+.receipt-brand .brand-mark{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#1c2bfd;color:#fff}
+.receipt-status{margin-right:148px;border-radius:20px;padding:6px 10px;background:rgba(255,255,255,.15);color:#fff;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.receipt-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:27px 28px 20px}
+.receipt-kicker,.receipt-reference small{display:block;margin:0 0 6px;color:#8391a4;font-size:9px;font-weight:700;letter-spacing:.14em}
+.receipt-title-row h2{margin:0;color:#132f55;font:400 27px 'Bauhaus 93','Arial Black',sans-serif}
+.receipt-reference{text-align:right}
+.receipt-reference strong{color:#1c2bfd;font:700 16px 'Open Sans',Arial,sans-serif;letter-spacing:.08em}
+.receipt-notice{margin:0 28px 18px;border-left:3px solid #d8a13a;background:#fff8e9;padding:11px 13px;color:#765d2c;font-size:11px;line-height:1.5}
+.receipt-route{display:grid;grid-template-columns:1fr minmax(80px,.5fr) 1fr;align-items:center;gap:16px;margin:0 28px;padding:20px 0;border-top:1px dashed #c9d6e6;border-bottom:1px dashed #c9d6e6}
+.receipt-route>div:first-child,.receipt-route>div:last-child{display:flex;flex-direction:column;gap:6px}
+.receipt-route>div:last-child{text-align:right}
+.receipt-route small,.receipt-details small{color:#8391a4;font-size:8px;font-weight:700;letter-spacing:.14em}
+.receipt-route strong{color:#132f55;font:400 30px 'Bauhaus 93','Arial Black',sans-serif}
+.receipt-route span{color:#617a9d;font-size:10px}
+.receipt-route-line{display:flex;align-items:center;gap:7px;color:#1c2bfd}
+.receipt-route-line i{height:1px;flex:1;background:#b8c9df}
+.receipt-details{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:20px 28px}
+.receipt-details>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.receipt-details strong{overflow-wrap:anywhere;color:#18365d;font-size:11px}
+.receipt-fare{margin:0 28px;padding:15px 0;border-top:1px solid #e3eaf3}
+.receipt-fare>div{display:flex;justify-content:space-between;padding:5px 0;color:#71839c;font-size:11px}
+.receipt-fare strong{color:#18365d}
+.receipt-fare .receipt-balance{margin-top:6px;border-top:1px solid #e3eaf3;padding-top:11px;color:#18365d;font-weight:700}
+.receipt-footer{display:flex;justify-content:space-between;gap:12px;background:#f4f8fd;padding:14px 28px;color:#71839c;font-size:9px}
+.receipt-footer span:first-child{color:#1c2bfd;font-weight:700;letter-spacing:.08em}
+@media(max-width:600px){.receipt-backdrop{align-items:start;padding:12px}.receipt-actions{top:10px;right:10px}.receipt-actions .modal-close{width:34px;height:34px}.receipt-print-button{min-height:34px;font-size:10px}.receipt-header{padding:16px 18px}.receipt-status{margin-right:126px}.receipt-title-row{align-items:flex-start;flex-direction:column;padding:22px 18px 16px}.receipt-reference{text-align:left}.receipt-route{margin-inline:18px;grid-template-columns:1fr 48px 1fr;gap:8px}.receipt-route strong{font-size:26px}.receipt-route span{font-size:9px}.receipt-details{grid-template-columns:repeat(2,minmax(0,1fr));padding:18px}.receipt-fare{margin-inline:18px}.receipt-footer{padding:12px 18px;flex-direction:column}}
+@media print{body *{visibility:hidden!important}.receipt-backdrop,.receipt-backdrop *{visibility:visible!important}.receipt-backdrop{position:absolute;inset:0;display:block;overflow:visible;background:#fff;padding:0}.booking-receipt{width:100%;max-width:none;overflow:visible;box-shadow:none}.no-print{display:none!important}.receipt-header,.receipt-footer{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

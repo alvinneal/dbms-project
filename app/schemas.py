@@ -194,6 +194,11 @@ class AircraftIn(Strict):
     status: AircraftStatus | None = None
 
 
+class OperatorAircraftIn(Strict):
+    registration_no: Registration
+    type_id: int = Field(gt=0)
+
+
 class AircraftOut(ORM):
     aircraft_id: int
     registration_no: str
@@ -345,28 +350,6 @@ class OperatorLoginIn(LoginIn):
     license_no: LicenseNo
 
 
-class OperatorFlightIn(Strict):
-    aircraft_id: int = Field(gt=0)
-    origin_id: int = Field(gt=0)
-    dest_id: int = Field(gt=0)
-    departure_time: datetime
-    passengers: int = Field(gt=0, le=500)
-    customer_name: Name
-    customer_email: Email
-    customer_phone: Phone
-    customer_id_proof: IdProof
-
-    @field_validator("departure_time")
-    @classmethod
-    def _departure(cls, v):
-        return check_departure(v)
-
-    @field_validator("dest_id")
-    @classmethod
-    def _different_places(cls, v, info):
-        if v == info.data.get("origin_id"):
-            raise ValueError("must differ from origin_id")
-        return v
 
 
 class ChangePasswordIn(Strict):

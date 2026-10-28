@@ -1,12 +1,12 @@
 from datetime import date
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import func, or_, select
 
 from . import schemas as s
 from .auth import OperatorUser
 from .deps import DB, get_or_404
-from .models import Aircraft, Booking, Customer, Location, Operator, Pilot
+from .models import Aircraft, AircraftType, Booking, Operator, Pilot
 
 router = APIRouter(prefix="/operator", tags=["operator"])
 
@@ -20,6 +20,18 @@ def operator_profile(user: OperatorUser, db: DB):
 def operator_aircraft(user: OperatorUser, db: DB):
     return db.scalars(select(Aircraft).where(Aircraft.operator_id == user.operator_id)
                       .order_by(Aircraft.registration_no)).unique().all()
+
+
+@router.post("/aircraft", response_model=s.AircraftOut, status_code=201)
+def add_aircraft(body: s.OperatorAircraftIn, user: OperatorUser, db: DB):
+    """Add an aircraft to the authenticated operator's fleet."""
+    get_or_404(db, AircraftType, body.type_id)
+    aircraft = Aircraft(registration_no=body.registration_no, operator_id=user.operator_id,
+                        type_id=body.type_id)
+    db.add(aircraft)
+    db.commit()
+    db.refresh(aircraft)
+    return aircraft
 
 
 @router.get("/maintenance", response_model=list[s.AircraftOut])
@@ -60,39 +72,3 @@ def operator_flights(response: Response, user: OperatorUser, db: DB,
     response.headers["X-Total-Count"] = str(db.scalar(select(func.count()).select_from(query.subquery())))
     return db.scalars(query.order_by(Booking.departure_time, Booking.booking_id)
                       .limit(limit).offset(offset)).unique().all()
-
-
-@router.post("/flights", response_model=s.BookingOut, status_code=201)
-def add_flight(body: s.OperatorFlightIn, user: OperatorUser, db: DB):
-    """Book a flight on this operator's aircraft for a customer."""
-    aircraft = get_or_404(db, Aircraft, body.aircraft_id)
-    if aircraft.operator_id != user.operator_id:
-        raise HTTPException(404, f"Aircraft {body.aircraft_id} not found")
-    if aircraft.status != "Available":
-        raise HTTPException(409, f"Aircraft {aircraft.registration_no} is in maintenance")
-    if body.passengers > aircraft.seats:
-        raise HTTPException(409, f"Passengers ({body.passengers}) exceed the aircraft seats ({aircraft.seats})")
-    if body.origin_id == body.dest_id:
-        raise HTTPException(422, "Origin and destination must differ")
-    get_or_404(db, Location, body.origin_id)
-    get_or_404(db, Location, body.dest_id)
-
-    customer = db.scalar(select(Customer).where(Customer.email == body.customer_email))
-    if customer is None:
-        customer = Customer(name=body.customer_name, email=body.customer_email, phone=body.customer_phone,
-                            id_proof=body.customer_id_proof)
-        db.add(customer)
-        db.flush()
-    elif (customer.name, customer.phone, customer.id_proof) != (
-        body.customer_name, body.customer_phone, body.customer_id_proof
-    ):
-        raise HTTPException(409, "A customer with this email already exists; verify their details before booking")
-
-    db.execute(text("SELECT pg_advisory_xact_lock(1)"))
-    booking_id = db.execute(
-        text("CALL book_flight(:c, :a, :o, :d, CAST(:dep AS timestamp), :pax, NULL)"),
-        {"c": customer.customer_id, "a": body.aircraft_id, "o": body.origin_id, "d": body.dest_id,
-         "dep": body.departure_time, "pax": body.passengers},
-    ).scalar_one()
-    db.commit()
-    return db.get(Booking, booking_id)
